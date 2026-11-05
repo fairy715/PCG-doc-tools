@@ -21,6 +21,12 @@ Under "Assets" on the release page, click `PCG-DocTools-Setup-<version>.exe`. If
 2. Choose a tool → upload a file → download the result. Files are processed only on this computer.
 3. OCR models are built in (Traditional/Simplified Chinese, English, Vietnamese, Indonesian); nothing is downloaded.
 
+## For IT: admin area
+
+- On that computer, open `http://127.0.0.1:8765/admin` (or "Admin" in the app).
+- The default is **single-user mode**: no account or password, whoever uses the computer is the administrator. You can turn tools on/off, set file retention, OCR settings, etc.
+- Account login (roles, `jtdt-admin`) can be enabled in the admin area for shared use. For single-user computers, keep single-user mode: this offline build has no `jtdt` command, so a forgotten password is harder to recover.
+
 ## 4. Update
 
 Install the new version over the old one; no need to uninstall. Your workspace, stamps and settings (`data` folder) are kept.
