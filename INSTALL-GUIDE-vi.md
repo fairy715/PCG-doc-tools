@@ -29,7 +29,11 @@ Phiên bản mới nhất: **https://github.com/fairy715/PCG-doc-tools/releases/
 
 ## 4. Cập nhật
 
-Không cần gỡ phiên bản cũ; không gian làm việc, con dấu và cài đặt (thư mục `data`) đều được giữ lại. Đóng Công cụ tài liệu PCG trước, rồi:
+Không cần gỡ phiên bản cũ; không gian làm việc, con dấu và cài đặt (thư mục `data`) đều được giữ lại.
+
+- **Cập nhật một lần bấm (đơn giản nhất)**: trên máy có internet, hoặc khi IT đã thiết lập thư mục dùng chung, khi mở lối tắt trên desktop sẽ hiện "Có phiên bản mới. Cập nhật ngay?". Bấm "Có"; ứng dụng tự mở sau khoảng 1 phút.
+
+Hoặc cập nhật thủ công: đóng Công cụ tài liệu PCG trước, rồi:
 
 - **Gói cập nhật nhỏ** (`PCG-DocTools-Update-….exe`, nhỏ hơn nhiều): bấm đúp; xong trong khoảng 1 phút. Nếu thông báo cần thành phần mới, hãy dùng bộ cài đầy đủ.
 - **Bộ cài đầy đủ**: cài đè lên phiên bản cũ.

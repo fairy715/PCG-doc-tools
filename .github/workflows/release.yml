@@ -72,7 +72,7 @@ jobs:
           & C:\PDTtest\python\python.exe C:\PDTtest\pcg\selftest.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           # 用桌面捷徑同一支啟動腳本啟動，確認網頁起得來
-          powershell -NoProfile -ExecutionPolicy Bypass -File C:\PDTtest\pcg\launch.ps1 -NoBrowser
+          powershell -NoProfile -ExecutionPolicy Bypass -File C:\PDTtest\pcg\launch.ps1 -NoBrowser -NoUpdateCheck
           $ok = $false
           for ($i = 0; $i -lt 60; $i++) {
             try { $r = Invoke-WebRequest http://127.0.0.1:8765/healthz -UseBasicParsing -TimeoutSec 5; if ($r.StatusCode -eq 200) { $ok = $true; break } } catch { }
@@ -137,6 +137,35 @@ jobs:
           "PREV=$prev" | Out-File -Append $env:GITHUB_ENV
           "PATCH_OK=$ok" | Out-File -Append $env:GITHUB_ENV
 
+      - name: 一鍵更新實測（從共用資料夾：找到新版、比對指紋、關掉程式、安裝、自動重新開啟）
+        shell: pwsh
+        run: |
+          Copy-Item stage\pcg\build.json C:\PDTtest\pcg\build.json -Force     # 還原上一步故意改壞的執行環境資訊
+          [System.IO.File]::WriteAllText("C:\PDTtest\pcg\version.json", '{"version":"1.0.0-pcg.1"}')
+          $patch = Get-ChildItem dist -Filter "PCG-DocTools-Update-*.exe" | Select-Object -First 1
+          $share = New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\share"
+          Copy-Item $patch.FullName $share
+          (Get-FileHash $patch.FullName -Algorithm SHA256).Hash.ToLower() + "  " + $patch.Name | Out-File -Encoding ascii "$share\$($patch.Name).sha256"
+          $cfg = @{ check = $true; who = "staff"; share = $share.FullName } | ConvertTo-Json
+          [System.IO.File]::WriteAllText("C:\PDTtest\data\pcg-update.json", $cfg, (New-Object System.Text.UTF8Encoding($false)))
+          $env:PYTHONUTF8 = "1"
+          $info = (& C:\PDTtest\python\python.exe C:\PDTtest\pcg\updater.py check | Select-Object -Last 1) | ConvertFrom-Json
+          Write-Host ("目前 {0}，最新 {1}（{2}，{3}）" -f $info.current, $info.version, $info.kind, $info.source)
+          if (-not $info.available -or $info.version -ne $env:VER -or $info.kind -ne "patch") { throw "沒有找到共用資料夾裡的小更新包" }
+          $r = (& C:\PDTtest\python\python.exe C:\PDTtest\pcg\updater.py install | Select-Object -Last 1) | ConvertFrom-Json
+          if (-not $r.ok) { throw "按下更新失敗：$($r.error)" }
+          $done = $false
+          for ($i = 0; $i -lt 80; $i++) {
+            Start-Sleep -Seconds 3
+            $v = (Get-Content C:\PDTtest\pcg\version.json -Raw -ErrorAction SilentlyContinue | ConvertFrom-Json).version
+            $up = $false
+            try { $up = (Invoke-WebRequest http://127.0.0.1:8765/healthz -UseBasicParsing -TimeoutSec 5).StatusCode -eq 200 } catch { }
+            if ($v -eq $env:VER -and $up) { $done = $true; break }
+          }
+          Get-Content C:\PDTtest\data\pcg-logs\update.log -Encoding utf8 -ErrorAction SilentlyContinue | Select-Object -Last 4
+          if (-not $done) { throw "一鍵更新後程式沒有以新版重新開啟" }
+          Write-Host "一鍵更新：找到新版、比對指紋、安裝、自我檢查、自動重新開啟，全部完成（$env:VER）"
+
       - name: 發布到 GitHub Releases
         if: ${{ inputs.publish }}
         shell: pwsh
@@ -154,7 +183,11 @@ jobs:
             $line = "這一版換了套件或模型，請用完整安裝檔（直接裝在舊版上面，資料會保留）"
             $lineEn = "This version has new packages or models: use the full installer (install over the old version; data is kept)"
           } else {
+            # 小更新包的指紋檔：IT 放到公司共用資料夾時一起放，同仁電腦安裝前會比對
+            $sha = "$($patch.FullName).sha256"
+            (Get-FileHash $patch.FullName -Algorithm SHA256).Hash.ToLower() + "  " + $patch.Name | Out-File -Encoding ascii $sha
             $files += $patch.FullName
+            $files += $sha
             $line = "``$($patch.Name)``（約 $pmb MB）；會自動檢查，如果出現「這次更新包含新的套件或模型」，改用完整安裝檔"
             $lineEn = "``$($patch.Name)`` (about $pmb MB). It checks itself; if it says new components are needed, use the full installer"
           }

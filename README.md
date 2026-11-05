@@ -37,6 +37,13 @@
 - 跟上一版的 `build.json`（發布頁附檔）比較，執行環境有變的那一版不放小更新包
 - 改了 `windows/build.py` 的 `OCR_LANG_SETS`、`VC_DLLS` 等不在套件清單裡的內容時，要把 `RUNTIME_REV` 加 1
 
+## 一鍵更新
+
+- 同仁點桌面捷徑時（程式還沒開），`pcg\launch.ps1` 會呼叫 `pcg\updater.py check`：公司共用資料夾或 GitHub 發布頁有較新的小更新包，就跳出「要現在更新嗎？」。按「是」→ 下載或複製、比對 SHA-256 → 小更新包 `/SILENT /RELAUNCH=1` → 裝完、自我檢查後自動開啟
+- 按「否」3 天內不再問；只有完整安裝檔或設定成只有 IT 時，只提示「請找 IT」
+- IT 設定：「開始」功能表的「PCG 文件工具 更新設定」（`pcg\update-settings.ps1`，要 IT 密碼），存在 `data\pcg-update.json`
+- 發布流程實測：舊版＋共用資料夾 → 執行更新 → 以新版自動重新開啟
+
 ## 更新原作者的版本
 
 1. 修改 `UPSTREAM` 的 `VERSION` 與 `REF`（原作者 v1.17 起沒有打 tag，用 commit 固定）

@@ -27,9 +27,15 @@ Under "Assets" on the release page, click `PCG-DocTools-Setup-<version>.exe`. If
 - The default is **single-user mode**: no account or password, whoever uses the computer is the administrator. You can turn tools on/off, set file retention, OCR settings, etc.
 - Account login (roles, `jtdt-admin`) can be enabled in the admin area for shared use. For single-user computers, keep single-user mode: this offline build has no `jtdt` command, so a forgotten password is harder to recover.
 
+- **One-click update settings**: Start menu → "PCG Document Tools update settings" (set an IT password the first time). Set automatic checks, who can update (staff / IT only), and a shared folder for computers without internet (put `PCG-DocTools-Update-<version>.exe` and its `.sha256` from the release page there), or click "Check and update now".
+
 ## 4. Update
 
-No need to uninstall; your workspace, stamps and settings (`data` folder) are kept. Close PCG Document Tools first, then:
+No need to uninstall; your workspace, stamps and settings (`data` folder) are kept.
+
+- **One-click update (easiest)**: on computers with internet, or where IT has set a shared folder, opening the desktop shortcut asks "A new version is available. Update now?". Click "Yes"; the app opens by itself after about 1 minute.
+
+Or update manually: close PCG Document Tools first, then:
 
 - **Small update** (`PCG-DocTools-Update-….exe`, much smaller): double-click it; done in about 1 minute. If it says new components are needed, use the full installer.
 - **Full installer**: install it over the old version.

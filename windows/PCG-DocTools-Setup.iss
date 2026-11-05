@@ -65,6 +65,7 @@ Name: "vi"; MessagesFile: "{#LangDir}\Vietnamese.isl"
 [CustomMessages]
 en.ShortcutName=PCG Document Tools
 en.LaunchNow=Open PCG Document Tools now
+en.SettingsName=PCG Document Tools update settings
 en.NotInstalled=PCG Document Tools is not installed on this computer.%n%nThis small update only works on a computer that already has it. Use the full installer (PCG-DocTools-Setup-….exe).
 en.NeedFull=This update needs new components that are only in the full installer.%n%nPlease use PCG-DocTools-Setup-{#AppVersion}.exe instead. Your data is kept.
 en.Updating=Updating and checking the program. Please wait...
@@ -72,6 +73,7 @@ en.UpdateFailed=The update was installed but the self-check failed. Please send 
 #ifexist LangDir + "\ChineseTraditional.isl"
 zh.ShortcutName=PCG 文件工具
 zh.LaunchNow=立即開啟 PCG 文件工具
+zh.SettingsName=PCG 文件工具 更新設定
 zh.NotInstalled=這台電腦還沒有安裝 PCG 文件工具。%n%n小更新包只能更新已經裝好的電腦，請改用完整安裝檔（PCG-DocTools-Setup-….exe）。
 zh.NeedFull=這次更新包含新的套件或模型，只有完整安裝檔才有。%n%n請改用 PCG-DocTools-Setup-{#AppVersion}.exe，資料都會保留。
 zh.Updating=正在更新並檢查程式，請稍候…
@@ -80,6 +82,7 @@ zh.UpdateFailed=已更新，但自我檢查沒有通過。請把這個檔案交�
 #ifexist LangDir + "\Indonesian.isl"
 id.ShortcutName=Alat Dokumen PCG
 id.LaunchNow=Buka Alat Dokumen PCG sekarang
+id.SettingsName=Pengaturan pembaruan Alat Dokumen PCG
 id.NotInstalled=Alat Dokumen PCG belum terpasang di komputer ini.%n%nPembaruan kecil ini hanya untuk komputer yang sudah memasangnya. Gunakan penginstal lengkap (PCG-DocTools-Setup-….exe).
 id.NeedFull=Pembaruan ini memerlukan komponen baru yang hanya ada di penginstal lengkap.%n%nGunakan PCG-DocTools-Setup-{#AppVersion}.exe. Data Anda tetap disimpan.
 id.Updating=Memperbarui dan memeriksa program. Mohon tunggu...
@@ -88,6 +91,7 @@ id.UpdateFailed=Pembaruan terpasang, tetapi pemeriksaan mandiri gagal. Kirim fil
 #ifexist LangDir + "\Vietnamese.isl"
 vi.ShortcutName=Công cụ tài liệu PCG
 vi.LaunchNow=Mở Công cụ tài liệu PCG ngay
+vi.SettingsName=Cài đặt cập nhật Công cụ tài liệu PCG
 vi.NotInstalled=Máy tính này chưa cài Công cụ tài liệu PCG.%n%nGói cập nhật nhỏ chỉ dùng cho máy đã cài. Hãy dùng bộ cài đầy đủ (PCG-DocTools-Setup-….exe).
 vi.NeedFull=Bản cập nhật này cần thành phần mới, chỉ có trong bộ cài đầy đủ.%n%nHãy dùng PCG-DocTools-Setup-{#AppVersion}.exe. Dữ liệu của bạn vẫn được giữ.
 vi.Updating=Đang cập nhật và kiểm tra chương trình. Vui lòng chờ...
@@ -115,6 +119,8 @@ Source: "{#Stage}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs i
 [Icons]
 Name: "{autodesktop}\{cm:ShortcutName}"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\pcg\launch.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\pcg\app.ico"
 Name: "{autoprograms}\{cm:ShortcutName}"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\pcg\launch.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\pcg\app.ico"
+; IT 用：一鍵更新的設定（自動檢查、誰可以更新、公司共用資料夾），要 IT 密碼
+Name: "{autoprograms}\{cm:SettingsName}"; Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\pcg\update-settings.ps1"""; WorkingDir: "{app}"; IconFilename: "{app}\pcg\app.ico"
 
 [Run]
 Filename: "{sys}\wscript.exe"; Parameters: """{app}\pcg\launch.vbs"""; Description: "{cm:LaunchNow}"; Flags: postinstall nowait skipifsilent
@@ -165,6 +171,12 @@ begin
 end;
 
 #ifdef PatchOnly
+{ 一鍵更新（updater.py 用 /RELAUNCH=1 啟動）：裝完、自我檢查做完後自動開啟 }
+function WantRelaunch(): Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;
+
 function InitializeSetup(): Boolean;
 begin
   PrevDir := FindPrevDir();
@@ -196,6 +208,8 @@ begin
       SuppressibleMsgBox(FmtMessage(CustomMessage('UpdateFailed'), [ExpandConstant('{app}\data\pcg-logs\update.log')]),
                          mbCriticalError, MB_OK, IDOK);
     WizardForm.ProgressGauge.Style := npbstNormal;
+    if WantRelaunch() then
+      Exec(ExpandConstant('{sys}\wscript.exe'), '"' + ExpandConstant('{app}\pcg\launch.vbs') + '"', '', SW_SHOWNORMAL, ewNoWait, RC);
   end;
 end;
 #endif

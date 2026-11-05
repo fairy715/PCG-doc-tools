@@ -29,7 +29,11 @@ Di bagian "Assets" pada halaman rilis, klik `PCG-DocTools-Setup-<versi>.exe`. Ji
 
 ## 4. Pembaruan
 
-Tidak perlu menghapus versi lama; ruang kerja, stempel, dan pengaturan (folder `data`) tetap disimpan. Tutup Alat Dokumen PCG terlebih dahulu, lalu:
+Tidak perlu menghapus versi lama; ruang kerja, stempel, dan pengaturan (folder `data`) tetap disimpan.
+
+- **Pembaruan sekali klik (paling mudah)**: di komputer yang terhubung internet, atau jika IT sudah mengatur folder bersama, saat membuka pintasan desktop akan muncul "Versi baru tersedia. Perbarui sekarang?". Klik "Ya"; aplikasi terbuka otomatis setelah sekitar 1 menit.
+
+Atau perbarui manual: tutup Alat Dokumen PCG terlebih dahulu, lalu:
 
 - **Pembaruan kecil** (`PCG-DocTools-Update-….exe`, jauh lebih kecil): klik dua kali; selesai sekitar 1 menit. Jika muncul pesan perlu komponen baru, gunakan penginstal lengkap.
 - **Penginstal lengkap**: instal di atas versi lama.
