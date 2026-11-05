@@ -1,1 +1,36 @@
-# PCG-doc-tools
+# PCG 文件工具（jt-doc-tools 離線版）
+
+把 [jt-doc-tools](https://github.com/jasoncheng7115/jt-doc-tools)（Jason Tools 文件工具箱，原作者 Jason Cheng）包成**離線 Windows 安裝檔**，給不能上網的同仁電腦使用。
+
+- **同仁**：看 [安裝說明](安裝說明.md)（[English](INSTALL-GUIDE-en.md)），從 [Releases](https://github.com/fairy715/PCG-doc-tools/releases/latest) 下載
+- **這個 repo 只有打包工具**，不放原作者的程式：打包時照 `UPSTREAM` 指定的版本從原作者的 GitHub 抓下來，原樣包進安裝檔
+
+## 架構
+
+安裝到 `D:\PCG-doc-tools`（沒有 D 槽就是 `C:\PCG-doc-tools`），不需要網路、不需要系統管理員：
+
+| 資料夾 | 內容 | 更新時 |
+|---|---|---|
+| `python\` | Python 3.12（免安裝版）＋所有套件（含 PyTorch、EasyOCR）、VC++ 執行環境 | 換掉 |
+| `jtdt\` | jt-doc-tools 程式（原作者原樣） | 換掉 |
+| `easyocr\` | 文字辨識模型：繁中、簡中、英文、拉丁字母語系（越南文、印尼文） | 換掉 |
+| `pcg\` | 啟動腳本、自我檢查、版本資訊 | 換掉 |
+| `data\` | 使用者的工作區、印章、設定、紀錄 | **保留** |
+
+桌面捷徑在背景啟動程式，只開給這台電腦（`http://127.0.0.1:8765/`），用瀏覽器操作。
+
+## 版本
+
+- **第 1 版（目前）**：不含 Office 轉檔引擎。需要 OxOffice／LibreOffice 的工具（Office 轉 PDF、保留排版的文件翻譯等）不能用
+- **第 2 版（規劃）**：加入 OxOffice（免系統管理員的方式），並評估接集團 Open WebUI
+
+## 更新原作者的版本
+
+1. 修改 `UPSTREAM` 的 `VERSION` 與 `REF`（原作者 v1.17 起沒有打 tag，用 commit 固定）
+2. Actions →「發布安裝包」→ Run workflow
+3. 流程會在乾淨的 Windows 上安裝、啟動、自我檢查，通過才發布
+
+## 授權
+
+jt-doc-tools 以 **AGPL-3.0-or-later** 授權；本 repo 的打包工具同樣以 AGPL-3.0-or-later 釋出（見 [LICENSE](LICENSE)）。
+安裝檔照原樣使用原作者的程式，原始碼就在安裝資料夾的 `jtdt\`，每一版的發布說明也附上對應的原作者原始碼連結。

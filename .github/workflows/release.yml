@@ -1,0 +1,103 @@
+# PCG 文件工具（jt-doc-tools 離線版）：製作並發布單一安裝檔（手動執行）
+# 在乾淨的 Windows 上實際安裝、啟動、自我檢查；全部通過才放到 GitHub Releases
+name: 發布安裝包
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "測試通過後發布到 Releases（不勾＝只製作與測試）"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: utf-8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安裝 Inno Setup 與安裝畫面的語言檔
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          New-Item -ItemType Directory -Force windows/lang | Out-Null
+          foreach ($n in 'ChineseTraditional','Indonesian','Vietnamese') {
+            try { Invoke-WebRequest "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Unofficial/$n.isl" -OutFile "windows/lang/$n.isl" } catch { Write-Host "略過 $n" }
+          }
+
+      - name: 製作安裝內容（原作者程式、Python 與套件、文字辨識模型）
+        run: python windows/build.py --out stage
+
+      - name: 打包前自我檢查
+        shell: pwsh
+        run: |
+          & stage\python\python.exe stage\pcg\selftest.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: 編譯安裝檔
+        shell: pwsh
+        run: |
+          $up = (Get-Content UPSTREAM | Where-Object { $_ -match '^VERSION=' }) -replace '^VERSION=', ''
+          $v = "$up-pcg.$env:GITHUB_RUN_NUMBER"
+          "VER=$v" | Out-File -Append $env:GITHUB_ENV
+          "UPVER=$up" | Out-File -Append $env:GITHUB_ENV
+          $info = @{ version = $v; upstream = $up; commit = $env:GITHUB_SHA.Substring(0, 7) } | ConvertTo-Json -Compress
+          [System.IO.File]::WriteAllText("stage/pcg/version.json", $info, (New-Object System.Text.UTF8Encoding($false)))
+          $stage = (Resolve-Path stage).Path
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DAppVersion=$v" "/DStage=$stage" windows\PCG-DocTools-Setup.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $exe = Get-ChildItem dist -Filter "PCG-DocTools-Setup-*.exe" | Select-Object -First 1
+          Write-Host "$($exe.Name)：$([math]::Round($exe.Length / 1MB)) MB"
+          if ($exe.Length -ge 2GB) { throw "安裝檔超過 GitHub Releases 的 2 GB 上限" }
+
+      - name: 實際安裝、啟動並自我檢查
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem dist -Filter "PCG-DocTools-Setup-*.exe" | Select-Object -First 1
+          $p = Start-Process $exe.FullName -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/DIR=C:\PDTtest' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "安裝程式結束代碼 $($p.ExitCode)" }
+          & C:\PDTtest\python\python.exe C:\PDTtest\pcg\selftest.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # 用桌面捷徑同一支啟動腳本啟動，確認網頁起得來
+          powershell -NoProfile -ExecutionPolicy Bypass -File C:\PDTtest\pcg\launch.ps1 -NoBrowser
+          $ok = $false
+          for ($i = 0; $i -lt 60; $i++) {
+            try { $r = Invoke-WebRequest http://127.0.0.1:8765/healthz -UseBasicParsing -TimeoutSec 5; if ($r.StatusCode -eq 200) { $ok = $true; break } } catch { }
+            Start-Sleep -Seconds 3
+          }
+          if (-not $ok) {
+            Get-Content C:\PDTtest\data\pcg-logs\server.log -ErrorAction SilentlyContinue | Select-Object -Last 40
+            Get-Content C:\PDTtest\data\pcg-logs\server-error.log -ErrorAction SilentlyContinue | Select-Object -Last 60
+            throw "網頁沒有起來"
+          }
+          $page = Invoke-WebRequest http://127.0.0.1:8765/ -UseBasicParsing -TimeoutSec 30
+          Write-Host "首頁：HTTP $($page.StatusCode)，$($page.Content.Length) 字元"
+          if ($page.StatusCode -ne 200) { throw "首頁打不開" }
+          Get-Content C:\PDTtest\data\pcg-logs\server-error.log -ErrorAction SilentlyContinue | Select-Object -Last 15
+
+      - name: 發布到 GitHub Releases
+        if: ${{ inputs.publish }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $exe = Get-ChildItem dist -Filter "PCG-DocTools-Setup-*.exe" | Select-Object -First 1
+          $ref = (Get-Content UPSTREAM | Where-Object { $_ -match '^REF=' }) -replace '^REF=', ''
+          $notes = Get-Content windows/release-notes.md -Raw -Encoding utf8
+          $vals = [ordered]@{ '{VER}' = $env:VER; '{UPVER}' = $env:UPVER; '{FULL_MB}' = "$([math]::Round($exe.Length / 1MB))"
+                              '{FULL}' = $exe.Name; '{REF}' = $ref; '{COMMIT}' = $env:GITHUB_SHA.Substring(0, 7) }
+          foreach ($k in $vals.Keys) { $notes = $notes.Replace($k, $vals[$k]) }
+          [System.IO.File]::WriteAllText("notes.md", $notes, (New-Object System.Text.UTF8Encoding($false)))
+          gh release create "v$env:VER" $exe.FullName --title "PCG 文件工具 $env:VER" --notes-file notes.md --target $env:GITHUB_SHA
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

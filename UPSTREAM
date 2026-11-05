@@ -1,0 +1,4 @@
+# 要打包的 jt-doc-tools 版本（原作者：https://github.com/jasoncheng7115/jt-doc-tools）
+# 原作者 v1.17 起沒有打 tag，所以用 commit 固定版本。更新：改這兩行，再執行「發布安裝包」
+VERSION=1.17.26
+REF=46376b8d8d7085409ce9bca092e74f32a7a244b6

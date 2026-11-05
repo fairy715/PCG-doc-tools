@@ -1,0 +1,7 @@
+stage/
+build-work/
+dist/
+windows/lang/
+__pycache__/
+*.pyc
+notes.md

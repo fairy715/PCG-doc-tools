@@ -1,0 +1,32 @@
+# PCG Document Tools: install guide
+
+[中文](安裝說明.md)
+
+Latest version: **https://github.com/fairy715/PCG-doc-tools/releases/latest**
+
+## 1. Download
+
+Under "Assets" on the release page, click `PCG-DocTools-Setup-<version>.exe`. If the browser says the file "isn't commonly downloaded", choose "Keep". IT can also put it on a shared folder.
+
+## 2. Install
+
+1. Double-click the exe.
+2. If "Windows protected your PC" appears, click "More info" → "Run anyway" (the installer has no code-signing certificate).
+3. Location: `D:\PCG-doc-tools` by default (`C:\PCG-doc-tools` without a D drive). Click "Next" → "Install". No internet or administrator rights needed.
+4. Done: tick "Open PCG Document Tools now" and click "Finish". A desktop shortcut is created.
+
+## 3. Use
+
+1. Double-click the desktop shortcut. The browser opens `http://127.0.0.1:8765/` (the first start takes 10–30 seconds).
+2. Choose a tool → upload a file → download the result. Files are processed only on this computer.
+3. OCR models are built in (Traditional/Simplified Chinese, English, Vietnamese, Indonesian); nothing is downloaded.
+
+## 4. Update
+
+Install the new version over the old one; no need to uninstall. Your workspace, stamps and settings (`data` folder) are kept.
+
+## 5. Problems
+
+- It does not open: send the two files in `D:\PCG-doc-tools\data\pcg-logs\` to IT.
+- Blocked by antivirus: ask IT to add the install folder as an exception.
+- Uninstall: Windows "Settings" → "Apps" → "PCG Document Tools" → "Uninstall". The `data` folder is kept; delete it manually if not needed.
