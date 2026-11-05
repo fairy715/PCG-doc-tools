@@ -4,8 +4,8 @@
   python/    Python 3.12（NuGet 免安裝版）＋ 所有套件（已安裝好，同仁電腦不用再裝）
   jtdt/      jt-doc-tools 程式（原作者原樣，只拿掉測試、文件等執行用不到的）
   easyocr/   文字辨識模型（繁中、簡中、英文、拉丁字母語系：越南文、印尼文）
+  oxoffice/  Office 轉檔引擎 OxOffice（OSSII 維護的台灣版 LibreOffice）：MSI 在打包機上解開，同仁電腦不用系統管理員
   pcg/       啟動腳本、自我檢查、版本資訊
-第 1 版不含 Office 轉檔引擎（OxOffice／LibreOffice）：需要它的工具會顯示為不可用。
 
 執行：python windows/build.py --out stage
 """
@@ -32,7 +32,7 @@ OCR_LANG_SETS = [["ch_tra", "en"], ["ch_sim", "en"], ["en"], ["vi", "en"], ["id"
 # VC++ 執行環境：PyTorch 需要。同仁電腦不一定有裝，又不能要系統管理員，所以跟著程式放（微軟允許隨程式散布）
 # 執行環境版本：OCR_LANG_SETS、VC_DLLS 或其他「不在套件清單裡」的執行環境內容改了就加 1。
 # 小更新包只換程式，裝之前比對已安裝的 deps_sha256、python、runtime_rev，有一個不同就要用完整安裝檔
-RUNTIME_REV = 1
+RUNTIME_REV = 2          # 2：加入 OxOffice（第 2 版）
 VC_DLLS = ["msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll", "vcruntime140.dll", "vcruntime140_1.dll",
            "concrt140.dll", "vcomp140.dll"]
 
@@ -135,6 +135,50 @@ def fetch_ocr_models(py: Path, model_root: Path):
         print(f"  {f.name}  {f.stat().st_size // 1048576} MB")
 
 
+def get_oxoffice(work: Path, dst: Path, pydir: Path):
+    """OxOffice 最新版的 64 位元 MSI → 用「系統管理員安裝」（msiexec /a）解開成資料夾，不寫登錄檔。
+    原作者的程式先找固定路徑、最後找 PATH 上的 soffice.exe：啟動腳本把 oxoffice\\program 放進 PATH"""
+    step("Office 轉檔引擎（OxOffice）")
+    hdr = {"User-Agent": "PCG-doc-tools-build", "Accept": "application/vnd.github+json"}
+    if os.environ.get("GH_TOKEN"):
+        hdr["Authorization"] = "Bearer " + os.environ["GH_TOKEN"]
+    req = urllib.request.Request("https://api.github.com/repos/OSSII/OxOffice/releases/latest", headers=hdr)
+    with urllib.request.urlopen(req, timeout=60) as r:
+        rel = json.loads(r.read().decode("utf-8"))
+    assets = [a for a in rel.get("assets", []) if a["name"].lower().endswith(".msi")
+              and any(k in a["name"].lower() for k in ("x86_64", "x64", "amd64", "win64"))]
+    if not assets:
+        sys.exit(f"OxOffice {rel.get('tag_name')} 沒有 64 位元的 MSI")
+    a = assets[0]
+    msi = work / a["name"]
+    if not msi.exists():
+        print(f"  下載 {a['name']}（{a['size'] // 1048576} MB）", flush=True)
+        urllib.request.urlretrieve(a["browser_download_url"], msi)
+    digest = str(a.get("digest") or "")
+    if digest.startswith("sha256:"):
+        got = hashlib.sha256(msi.read_bytes()).hexdigest()
+        if got != digest.split(":", 1)[1]:
+            sys.exit("OxOffice 安裝檔的指紋不符")
+    tmp = work / "oxoffice-admin"
+    if tmp.exists():
+        shutil.rmtree(tmp)
+    tmp.mkdir()
+    run(["msiexec", "/a", str(msi), "/qn", f"TARGETDIR={tmp}", "/l*v", str(work / "oxoffice-msi.log")])
+    found = sorted(tmp.rglob("soffice.exe"), key=lambda p: len(p.parts))
+    if not found:
+        sys.exit("解開的 OxOffice 裡找不到 soffice.exe")
+    root = found[0].parent.parent
+    shutil.copytree(root, dst)
+    # 同仁電腦不一定有 VC++ 執行環境：跟 Python 一樣放一份在 program\ 旁邊
+    prog = dst / "program"
+    sysdir = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32"
+    for name in VC_DLLS:
+        if (sysdir / name).exists() and not (prog / name).exists():
+            shutil.copy2(sysdir / name, prog / name)
+    print(f"  OxOffice {rel.get('tag_name')}：{(prog / 'soffice.exe').relative_to(dst.parent)}")
+    return str(rel.get("tag_name") or a["name"])
+
+
 def clean(out: Path):
     for d in list(out.rglob("__pycache__")):
         shutil.rmtree(d, ignore_errors=True)
@@ -162,18 +206,19 @@ def main():
     req = install_packages(src, py, work)
     copy_vc_runtime(out / "python")
     fetch_ocr_models(py, out / "easyocr")
+    office_ver = get_oxoffice(work, out / "oxoffice", out / "python")
     step("啟動腳本與版本資訊")
     shutil.copytree(ROOT / "windows" / "pcg", out / "pcg")
     ico = src / "packaging" / "windows" / "assets" / "jtdt.ico"
     if ico.exists():
         shutil.copy2(ico, out / "pcg" / "app.ico")
     info = {"upstream_version": version, "upstream_ref": ref, "python": PY_VERSION, "runtime_rev": RUNTIME_REV,
-            "deps_sha256": hashlib.sha256(req.read_bytes()).hexdigest(),
+            "deps_sha256": hashlib.sha256(req.read_bytes()).hexdigest(), "oxoffice": office_ver,
             "built": time.strftime("%Y-%m-%d %H:%M:%S")}
     (out / "pcg" / "build.json").write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
     clean(out)
     step("大小")
-    for name in ("python", "jtdt", "easyocr", "pcg"):
+    for name in ("python", "jtdt", "easyocr", "oxoffice", "pcg"):
         print(f"  {name:8s} {dir_mb(out / name):6d} MB")
     print(f"  合計     {dir_mb(out):6d} MB")
 

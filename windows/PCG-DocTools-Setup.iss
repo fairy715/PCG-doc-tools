@@ -98,6 +98,7 @@ vi.UpdateFailed=Đã cập nhật nhưng tự kiểm tra không đạt. Hãy g�
 ; 更新時先清掉舊的程式與套件（舊版留下的檔案會跟新版衝突）；使用者的 data\ 不動
 #ifndef PatchOnly
 Type: filesandordirs; Name: "{app}\python"
+Type: filesandordirs; Name: "{app}\oxoffice"
 #endif
 Type: filesandordirs; Name: "{app}\jtdt"
 Type: filesandordirs; Name: "{app}\pcg"
@@ -126,6 +127,7 @@ Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Com
 Type: filesandordirs; Name: "{app}\python"
 Type: filesandordirs; Name: "{app}\jtdt"
 Type: filesandordirs; Name: "{app}\easyocr"
+Type: filesandordirs; Name: "{app}\oxoffice"
 Type: filesandordirs; Name: "{app}\pcg"
 
 [Code]
@@ -216,7 +218,7 @@ var
   RC: Integer;
 begin
   { 更新時先關掉還在跑的程式，否則檔案被佔用 }
-  Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -Command "Get-Process python -ErrorAction SilentlyContinue | Where-Object { $_.Path -like ''' +
-       ExpandConstant('{app}') + '\python\*'' } | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, RC);
+  Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -Command "Get-Process python,soffice,soffice.bin -ErrorAction SilentlyContinue | Where-Object { $_.Path -like ''' +
+       ExpandConstant('{app}') + '\*'' } | Stop-Process -Force"', '', SW_HIDE, ewWaitUntilTerminated, RC);
   Result := '';
 end;

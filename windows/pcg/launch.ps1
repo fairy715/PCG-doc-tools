@@ -23,7 +23,8 @@ if (-not (Test-Port $Port)) {
     $env:EASYOCR_MODULE_PATH = Join-Path $App "easyocr"
     $env:PYTHONUTF8 = "1"
     $env:PYTHONIOENCODING = "utf-8"
-    $env:PATH = (Join-Path $App "python") + ";" + $env:PATH
+    # Office 轉檔引擎：原作者的程式找不到固定路徑時會用 PATH 上的 soffice.exe
+    $env:PATH = (Join-Path $App "python") + ";" + (Join-Path $App "oxoffice\program") + ";" + $env:PATH
     Start-Process -FilePath $py -ArgumentList @("run.py") -WorkingDirectory (Join-Path $App "jtdt") -WindowStyle Hidden `
         -RedirectStandardOutput (Join-Path $logDir "server.log") -RedirectStandardError (Join-Path $logDir "server-error.log")
     for ($i = 0; $i -lt 240 -and -not (Test-Port $Port); $i++) { Start-Sleep -Milliseconds 500 }

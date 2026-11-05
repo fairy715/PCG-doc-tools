@@ -14,6 +14,7 @@
 | `python\` | Python 3.12（免安裝版）＋所有套件（含 PyTorch、EasyOCR）、VC++ 執行環境 | 換掉 |
 | `jtdt\` | jt-doc-tools 程式（原作者原樣） | 換掉 |
 | `easyocr\` | 文字辨識模型：繁中、簡中、英文、拉丁字母語系（越南文、印尼文） | 換掉 |
+| `oxoffice\` | Office 轉檔引擎 OxOffice（台灣版 LibreOffice）：MSI 在打包機上解開，同仁電腦不用系統管理員 | 換掉 |
 | `pcg\` | 啟動腳本、自我檢查、版本資訊 | 換掉 |
 | `data\` | 使用者的工作區、印章、設定、紀錄 | **保留** |
 
@@ -21,8 +22,10 @@
 
 ## 版本
 
-- **第 1 版（目前）**：不含 Office 轉檔引擎。需要 OxOffice／LibreOffice 的工具（Office 轉 PDF、保留排版的文件翻譯等）不能用
-- **第 2 版（規劃）**：加入 OxOffice（免系統管理員的方式），並評估接集團 Open WebUI
+- **第 1 版**（`1.17.26-pcg.1`、`pcg.2`）：不含 Office 轉檔引擎
+- **第 2 版（目前）**：內建 OxOffice，Office 轉 PDF、格式互轉等工具可以用；自我檢查會實際把 Word 轉成 PDF
+- **之後**：接集團 Open WebUI（保留排版的文件翻譯、逐句翻譯要用大模型）
+- 為什麼不用 OnlyOffice：原作者的程式是呼叫 LibreOffice 系列的 `soffice` 指令與它的轉檔濾鏡名稱，OnlyOffice 的轉檔方式完全不同，要改原作者大量程式才能換
 
 ## 小更新包
 

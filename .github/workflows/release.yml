@@ -36,7 +36,9 @@ jobs:
             try { Invoke-WebRequest "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Unofficial/$n.isl" -OutFile "windows/lang/$n.isl" } catch { Write-Host "略過 $n" }
           }
 
-      - name: 製作安裝內容（原作者程式、Python 與套件、文字辨識模型）
+      - name: 製作安裝內容（原作者程式、Python 與套件、文字辨識模型、OxOffice）
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: python windows/build.py --out stage
 
       - name: 打包前自我檢查

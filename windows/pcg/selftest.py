@@ -69,9 +69,34 @@ def ocr():
     return f"辨識結果：{text}"
 
 
+def office():
+    """OxOffice：原作者的程式找得到，而且真的能把 Word 轉成 PDF"""
+    import subprocess
+    import tempfile
+    prog = APP / "oxoffice" / "program"
+    os.environ["PATH"] = str(prog) + os.pathsep + os.environ.get("PATH", "")
+    from app.core.office_convert import find_soffice, detect_engine
+    exe = find_soffice()
+    assert exe, "找不到 soffice.exe"
+    from docx import Document
+    tmp = Path(tempfile.mkdtemp(prefix="pcg-doc-office-"))
+    doc = Document()
+    doc.add_paragraph("PCG office test 2026")
+    doc.save(tmp / "t.docx")
+    prof = (tmp / "profile").as_uri()
+    subprocess.run([exe, f"-env:UserInstallation={prof}", "--headless", "--norestore", "--convert-to", "pdf",
+                    "--outdir", str(tmp), str(tmp / "t.docx")], check=True, timeout=300,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    import fitz
+    text = fitz.open(tmp / "t.pdf")[0].get_text()
+    assert "2026" in text, f"轉出的 PDF 內容：{text!r}"
+    return f"{detect_engine()}：Word 轉 PDF 正常（{exe}）"
+
+
 check("套件", pkgs)
 check("程式", app_import)
 check("PDF 處理", pdf_roundtrip)
 check("文字辨識（離線模型）", ocr)
+check("Office 轉檔（OxOffice）", office)
 print("結果：" + ("全部通過" if not fails else f"{fails} 項失敗"))
 sys.exit(1 if fails else 0)

@@ -22,9 +22,11 @@
 
 ### 這一版可以用的工具
 
-不需要 Office 引擎的工具：PDF 合併分拆、頁面整理、用印與簽名、浮水印、表單填寫、文字辨識（繁中、簡中、英文、越南文、印尼文，模型已內建）、個資遮蔽、加密解密、中繼資料清除、差異比對、壓縮等。
+- PDF 合併分拆、頁面整理、用印與簽名、浮水印、表單填寫、個資遮蔽、加密解密、中繼資料清除、差異比對、壓縮等
+- 文字辨識：繁中、簡中、英文、越南文、印尼文，模型已內建
+- **Office 轉檔（內建 OxOffice）**：Word／Excel／PPT 轉 PDF、Office 格式互轉、Office 轉圖片、Markdown 轉 Word；騎縫章、書籤等工具也能處理 Word 檔
 
-**還不能用**：需要 Office 引擎（OxOffice／LibreOffice）的工具，例如 Word／Excel／PPT 轉 PDF、保留排版的文件翻譯、騎縫章（Word 檔）。要接大模型的功能（逐句翻譯、AI 摘要）預設關閉。
+**要接大模型的功能**（保留排版的文件翻譯、逐句翻譯、AI 摘要、公文撰擬）預設關閉，需要 IT 在管理區設定大模型。
 
 ---
 
@@ -42,7 +44,7 @@ Offline build of [jt-doc-tools](https://github.com/jasoncheng7115/jt-doc-tools) 
 3. Open "PCG Document Tools" on the desktop; the browser opens `http://127.0.0.1:8765/`.
 4. To update, close the app and run the small update or the full installer over the old version. Your data (`data` folder) is kept.
 
-This build has the tools that do not need an Office engine (PDF merge/split, stamps, watermarks, OCR with built-in models, redaction, encryption, compare, compress…). Tools that need OxOffice/LibreOffice are not available yet.
+This build includes the PDF tools (merge/split, stamps, watermarks, redaction, encryption, compare, compress…), OCR with built-in models, and the Office engine OxOffice (Word/Excel/PowerPoint to PDF, format conversion, etc.). Features that need an LLM (layout-preserving translation, AI summary) are off until IT configures an LLM in the admin area.
 
 ---
 授權：jt-doc-tools 以 AGPL-3.0-or-later 授權，原始碼：https://github.com/jasoncheng7115/jt-doc-tools/tree/{REF}（本安裝檔照原樣使用，未修改原作者程式；程式碼也在安裝資料夾的 `jtdt\`）。

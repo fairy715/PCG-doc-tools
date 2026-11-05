@@ -17,6 +17,7 @@ Log "=== 小更新包：更新到 $ver ==="
 $py = Join-Path $AppDir "python\python.exe"
 if (-not (Test-Path $py)) { Log "[錯誤] 找不到執行環境（$py），請改用完整安裝檔"; exit 1 }
 $env:PYTHONUTF8 = "1"
+$env:PATH = (Join-Path $AppDir "oxoffice\program") + ";" + $env:PATH
 $ErrorActionPreference = "Continue"
 & $py (Join-Path $AppDir "pcg\selftest.py") 2>&1 | ForEach-Object { "$_" } | Out-File -Append -Encoding UTF8 $log
 $rc = $LASTEXITCODE
