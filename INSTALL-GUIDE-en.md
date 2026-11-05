@@ -1,6 +1,6 @@
 # PCG Document Tools: install guide
 
-[中文](安裝說明.md)
+[中文](安裝說明.md) · [English](INSTALL-GUIDE-en.md) · [Bahasa Indonesia](INSTALL-GUIDE-id.md) · [Tiếng Việt](INSTALL-GUIDE-vi.md)
 
 Latest version: **https://github.com/fairy715/PCG-doc-tools/releases/latest**
 
@@ -29,7 +29,11 @@ Under "Assets" on the release page, click `PCG-DocTools-Setup-<version>.exe`. If
 
 ## 4. Update
 
-Install the new version over the old one; no need to uninstall. Your workspace, stamps and settings (`data` folder) are kept.
+No need to uninstall; your workspace, stamps and settings (`data` folder) are kept. Close PCG Document Tools first, then:
+
+- **Small update** (`PCG-DocTools-Update-….exe`, much smaller): double-click it; done in about 1 minute. If it says new components are needed, use the full installer.
+- **Full installer**: install it over the old version.
+- The table at the top of each release page says which one to use. IT mass deployment: add `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` after the exe.
 
 ## 5. Problems
 

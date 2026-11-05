@@ -2,7 +2,7 @@
 
 把 [jt-doc-tools](https://github.com/jasoncheng7115/jt-doc-tools)（Jason Tools 文件工具箱，原作者 Jason Cheng）包成**離線 Windows 安裝檔**，給不能上網的同仁電腦使用。
 
-- **同仁**：看 [安裝說明](安裝說明.md)（[English](INSTALL-GUIDE-en.md)），從 [Releases](https://github.com/fairy715/PCG-doc-tools/releases/latest) 下載
+- **同仁**：看 [安裝說明](安裝說明.md)（[English](INSTALL-GUIDE-en.md) · [Bahasa Indonesia](INSTALL-GUIDE-id.md) · [Tiếng Việt](INSTALL-GUIDE-vi.md)），從 [Releases](https://github.com/fairy715/PCG-doc-tools/releases/latest) 下載
 - **這個 repo 只有打包工具**，不放原作者的程式：打包時照 `UPSTREAM` 指定的版本從原作者的 GitHub 抓下來，原樣包進安裝檔
 
 ## 架構
@@ -23,6 +23,16 @@
 
 - **第 1 版（目前）**：不含 Office 轉檔引擎。需要 OxOffice／LibreOffice 的工具（Office 轉 PDF、保留排版的文件翻譯等）不能用
 - **第 2 版（規劃）**：加入 OxOffice（免系統管理員的方式），並評估接集團 Open WebUI
+
+## 小更新包
+
+每次發布同時產出完整安裝檔（`PCG-DocTools-Setup-*.exe`）與小更新包（`PCG-DocTools-Update-*.exe`）。小更新包只有程式（`jtdt\`、`pcg\`），Python、套件、文字辨識模型沿用已安裝的：
+
+- 裝之前比對已安裝的 `pcg\build.json`（套件清單 `deps_sha256`、`python`、`runtime_rev`），不同就拒絕，提示改用完整安裝檔
+- 裝完跑自我檢查，紀錄在 `data\pcg-logs\update.log`
+- 發布流程實測：正常更新成功、執行環境不同時拒絕且不動到程式
+- 跟上一版的 `build.json`（發布頁附檔）比較，執行環境有變的那一版不放小更新包
+- 改了 `windows/build.py` 的 `OCR_LANG_SETS`、`VC_DLLS` 等不在套件清單裡的內容時，要把 `RUNTIME_REV` 加 1
 
 ## 更新原作者的版本
 

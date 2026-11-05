@@ -86,6 +86,55 @@ jobs:
           if ($page.StatusCode -ne 200) { throw "首頁打不開" }
           Get-Content C:\PDTtest\data\pcg-logs\server-error.log -ErrorAction SilentlyContinue | Select-Object -Last 15
 
+      - name: 製作小更新包，套用在剛裝好的電腦上測試
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $b = Get-Content stage/pcg/build.json -Raw | ConvertFrom-Json
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DAppVersion=$env:VER" "/DStage=$((Resolve-Path stage).Path)" "/DPatchOnly" `
+            "/DDepsSha=$($b.deps_sha256)" "/DPyVer=$($b.python)" "/DRuntimeRev=$($b.runtime_rev)" windows\PCG-DocTools-Setup.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $patch = Get-ChildItem dist -Filter "PCG-DocTools-Update-*.exe" | Select-Object -First 1
+          Write-Host "$($patch.Name)：$([math]::Round($patch.Length / 1MB, 1)) MB"
+
+          # 1. 假裝裝的是舊版，套用小更新包 → 版本要變成這一版、自我檢查要過（程式還在跑也要能更新）
+          [System.IO.File]::WriteAllText("C:\PDTtest\pcg\version.json", '{"version":"old"}')
+          $p = Start-Process $patch.FullName -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          Get-Content C:\PDTtest\data\pcg-logs\update.log -Encoding utf8 -ErrorAction SilentlyContinue | Select-Object -Last 8
+          if ($p.ExitCode -ne 0) { throw "小更新包結束代碼 $($p.ExitCode)" }
+          if (-not (Select-String -Path C:\PDTtest\data\pcg-logs\update.log -Pattern '更新完成' -Encoding utf8 -Quiet)) { throw "小更新包的自我檢查沒有通過" }
+          $v = Get-Content C:\PDTtest\pcg\version.json -Raw | ConvertFrom-Json
+          if ($v.version -ne $env:VER) { throw "更新後版本是 $($v.version)，應該是 $env:VER" }
+
+          # 2. 執行環境不同（模擬「這次換了套件」）→ 要拒絕、不能動到已安裝的程式
+          $bj = Get-Content C:\PDTtest\pcg\build.json -Raw
+          [System.IO.File]::WriteAllText("C:\PDTtest\pcg\build.json", $bj.Replace($b.deps_sha256, "0000"))
+          [System.IO.File]::WriteAllText("C:\PDTtest\pcg\version.json", '{"version":"old"}')
+          $p = Start-Process $patch.FullName -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($p.ExitCode -eq 0) { throw "執行環境不同時小更新包應該拒絕安裝" }
+          $v = Get-Content C:\PDTtest\pcg\version.json -Raw | ConvertFrom-Json
+          if ($v.version -ne "old") { throw "被拒絕的小更新包不應該改動程式" }
+          Write-Host "小更新包：正常更新、執行環境不同時拒絕，兩項都通過"
+
+          # 3. 跟上一版比：執行環境一樣，已裝上一版的電腦才能用小更新包
+          $prev = gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>$null
+          $ok = "unknown"
+          if ($prev) {
+            New-Item -ItemType Directory -Force prevrel | Out-Null
+            gh release download $prev -p build.json -D prevrel 2>$null
+            if (Test-Path prevrel/build.json) {
+              $pb = Get-Content prevrel/build.json -Raw | ConvertFrom-Json
+              $prevRev = if ($pb.runtime_rev) { $pb.runtime_rev } else { 1 }
+              $same = ($pb.deps_sha256 -eq $b.deps_sha256) -and ($pb.python -eq $b.python) -and ($prevRev -eq $b.runtime_rev)
+              $ok = if ($same) { "yes" } else { "no" }
+            }
+          }
+          $global:LASTEXITCODE = 0
+          Write-Host "上一版：$prev；可以用小更新包：$ok"
+          "PREV=$prev" | Out-File -Append $env:GITHUB_ENV
+          "PATCH_OK=$ok" | Out-File -Append $env:GITHUB_ENV
+
       - name: 發布到 GitHub Releases
         if: ${{ inputs.publish }}
         shell: pwsh
@@ -93,11 +142,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $exe = Get-ChildItem dist -Filter "PCG-DocTools-Setup-*.exe" | Select-Object -First 1
+          $patch = Get-ChildItem dist -Filter "PCG-DocTools-Update-*.exe" | Select-Object -First 1
           $ref = (Get-Content UPSTREAM | Where-Object { $_ -match '^REF=' }) -replace '^REF=', ''
+          # build.json 也放上發布頁：下一版用它判斷能不能出小更新包
+          Copy-Item stage/pcg/build.json build.json
+          $files = @($exe.FullName, (Resolve-Path build.json).Path)
+          $pmb = [math]::Round($patch.Length / 1MB)
+          if ($env:PATCH_OK -eq "no") {
+            $line = "這一版換了套件或模型，請用完整安裝檔（直接裝在舊版上面，資料會保留）"
+            $lineEn = "This version has new packages or models: use the full installer (install over the old version; data is kept)"
+          } else {
+            $files += $patch.FullName
+            $line = "``$($patch.Name)``（約 $pmb MB）；會自動檢查，如果出現「這次更新包含新的套件或模型」，改用完整安裝檔"
+            $lineEn = "``$($patch.Name)`` (about $pmb MB). It checks itself; if it says new components are needed, use the full installer"
+          }
           $notes = Get-Content windows/release-notes.md -Raw -Encoding utf8
-          $vals = [ordered]@{ '{VER}' = $env:VER; '{UPVER}' = $env:UPVER; '{FULL_MB}' = "$([math]::Round($exe.Length / 1MB))"
+          $vals = [ordered]@{ '{PATCH_LINE_EN}' = $lineEn; '{PATCH_LINE}' = $line
+                              '{VER}' = $env:VER; '{UPVER}' = $env:UPVER; '{FULL_MB}' = "$([math]::Round($exe.Length / 1MB))"
                               '{FULL}' = $exe.Name; '{REF}' = $ref; '{COMMIT}' = $env:GITHUB_SHA.Substring(0, 7) }
           foreach ($k in $vals.Keys) { $notes = $notes.Replace($k, $vals[$k]) }
           [System.IO.File]::WriteAllText("notes.md", $notes, (New-Object System.Text.UTF8Encoding($false)))
-          gh release create "v$env:VER" $exe.FullName --title "PCG 文件工具 $env:VER" --notes-file notes.md --target $env:GITHUB_SHA
+          gh release create "v$env:VER" @files --title "PCG 文件工具 $env:VER" --notes-file notes.md --target $env:GITHUB_SHA
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

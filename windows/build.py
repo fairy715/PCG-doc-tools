@@ -30,6 +30,9 @@ SKIP_TOP = {".git", ".github", "tests", "docs", "tools", "scripts", "packaging"}
 # EasyOCR：偵測模型 ＋ 各語言的辨識模型。語言組合照 jt-doc-tools 會送出去的（tesseract 代碼對應過去）
 OCR_LANG_SETS = [["ch_tra", "en"], ["ch_sim", "en"], ["en"], ["vi", "en"], ["id", "en"]]
 # VC++ 執行環境：PyTorch 需要。同仁電腦不一定有裝，又不能要系統管理員，所以跟著程式放（微軟允許隨程式散布）
+# 執行環境版本：OCR_LANG_SETS、VC_DLLS 或其他「不在套件清單裡」的執行環境內容改了就加 1。
+# 小更新包只換程式，裝之前比對已安裝的 deps_sha256、python、runtime_rev，有一個不同就要用完整安裝檔
+RUNTIME_REV = 1
 VC_DLLS = ["msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll", "vcruntime140.dll", "vcruntime140_1.dll",
            "concrt140.dll", "vcomp140.dll"]
 
@@ -164,7 +167,7 @@ def main():
     ico = src / "packaging" / "windows" / "assets" / "jtdt.ico"
     if ico.exists():
         shutil.copy2(ico, out / "pcg" / "app.ico")
-    info = {"upstream_version": version, "upstream_ref": ref, "python": PY_VERSION,
+    info = {"upstream_version": version, "upstream_ref": ref, "python": PY_VERSION, "runtime_rev": RUNTIME_REV,
             "deps_sha256": hashlib.sha256(req.read_bytes()).hexdigest(),
             "built": time.strftime("%Y-%m-%d %H:%M:%S")}
     (out / "pcg" / "build.json").write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
